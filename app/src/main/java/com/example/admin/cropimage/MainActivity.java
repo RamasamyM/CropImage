@@ -17,6 +17,8 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.File;
+
 /**
  * Created by Admin on 3/17/2016.
  */
@@ -28,16 +30,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public static final int id = R.id.my_camera;
     private Button get_image, get_camera;
     public static final int get_imageID = R.id.activity_button;
-    public  static final  int get_image_action= R.id.camera_button;
-    private static final int SELECT_PICTURE = 1;
+    public static final int get_image_action = R.id.camera_button;
+    private static final int SELECT_PICTURE = 2;
     private static final int CAMERA_REQUEST = 8888;
-    private static final int PIC_CROP = 2;
+    private static final int PIC_CROP = 1;
     private String selectedImagePath;
     String mCurrentPhotoPath;
     private Uri picUri;
+
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         cameraImage = (ImageView) findViewById(R.id.my_camera);
@@ -54,10 +56,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case get_imageID:
                 selectImage();
                 break;
-
             case get_image_action:
                 Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, MediaStore.Images.Media.DATA.toString());
+                File file = new File(getFilesDir(),"pic.jpg");
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, file);
                 startActivityForResult(cameraIntent, CAMERA_REQUEST);
             default:
                 break;
@@ -65,61 +67,55 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
     private void selectImage()
     {
-        final CharSequence[] options = {"Choose from Gallery","Cancel" };
+        final CharSequence[] options = {"Choose from Gallery", "Cancel"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Add Photo!");
         builder.setItems(options, new DialogInterface.OnClickListener() {
-
             @Override
-
-            public void onClick(DialogInterface dialog, int item)
-            {
-                if (options[item].equals("Choose from Gallery"))
-                {
-                    Intent intent = new   Intent(Intent.ACTION_PICK,android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                    startActivityForResult(intent,SELECT_PICTURE);
-                }
-                else if (options[item].equals("Cancel"))
-                {
+            public void onClick(DialogInterface dialog, int item) {
+                if (options[item].equals("Choose from Gallery")) {
+                    Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                    startActivityForResult(intent, SELECT_PICTURE);
+                } else if (options[item].equals("Cancel")) {
                     dialog.dismiss();
                 }
             }
-
         });
         builder.show();
     }
-    public void onActivityResult(int requestCode, int resultCode, Intent data)
-    {
-
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
-            if (requestCode == SELECT_PICTURE)
-            {
+            if (requestCode == SELECT_PICTURE) {
                 picUri = data.getData();
                 performCrop();
                 String[] filePath = {MediaStore.Images.Media.DATA};
-                Cursor c = getContentResolver().query(picUri,filePath, null, null, null);
+                Cursor c = getContentResolver().query(picUri, filePath, null, null, null);
                 c.moveToFirst();
                 int columnIndex = c.getColumnIndex(filePath[0]);
                 String picturePath = c.getString(columnIndex);
                 c.close();
                 Bitmap thumbnail = (BitmapFactory.decodeFile(picturePath));
-                Log.w("image  path ...", picturePath+"");
+                Log.w("image path ...", picturePath + "");
                 cameraImage.setImageBitmap(thumbnail);
+            } else if (requestCode == CAMERA_REQUEST) {
+                Bundle bundle = data.getExtras();
+                if (bundle != null) {
+                    photo = (Bitmap)
+                            bundle.get("data");
+                    cameraImage.setImageBitmap(photo);
+                }
+            } else if (requestCode == PIC_CROP) {
+                Log.i("MainActvity ", "request code " + PIC_CROP);
+                Bundle bundle = data.getExtras();
+                if (bundle != null) {
+                    photo = bundle.getParcelable("data");
+                    cameraImage.setImageBitmap(photo);
+            /* photo = (Bitmap) bundle.get("data"); cameraImage.setImageBitmap(photo);*/
+                }
             }
         }
-
-        if (requestCode == CAMERA_REQUEST)
-        {
-            Bundle bundle = data.getExtras();
-            if (bundle != null)
-            {
-                photo = (Bitmap) bundle.get("data");
-                cameraImage.setImageBitmap(photo);
-            }
-        }
-
     }
-    private void performCrop(){
+    private void performCrop() {
         try {
             Intent cropIntent = new Intent("com.android.camera.action.CROP");
             cropIntent.setDataAndType(picUri, "image/*");
@@ -131,11 +127,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             cropIntent.putExtra("return-data", true);
             startActivityForResult(cropIntent, PIC_CROP);
         }
-        catch(ActivityNotFoundException anfe){
+        catch (ActivityNotFoundException anfe)
+        {
             String errorMessage = "Whoops - your device doesn't support the crop action!";
             Toast toast = Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT);
             toast.show();
         }
     }
-
+// don't need  free crop can we  use this  method
+    private void performCrop1() {
+        Bitmap croppedBmp = Bitmap.createBitmap(photo, 0, 0, photo.getWidth(), photo.getHeight() - 10);
+        cameraImage1.setImageBitmap(croppedBmp);
+    }
 }
+
