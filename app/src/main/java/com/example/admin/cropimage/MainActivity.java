@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case get_image_action:
                 Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                 File file= new File(Environment.getExternalStorageDirectory(),FILENAME);
+          //      File hardcodefile= new File("/sdcard/images/taken_image.jpg");
                 FileOutputStream fos = null;
                 try {
                     fos = openFileOutput(FILENAME, Context.MODE_PRIVATE);
